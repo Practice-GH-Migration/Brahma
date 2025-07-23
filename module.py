@@ -987,53 +987,9 @@ def migrate_teams_optimized(gh_source, gh_target, source_org, target_org, output
         failed_migrations,
         migration_details
     )
-    
     return all(status in ["success", "exists"] for status in migration_status.values())
-
-
+    
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-# Improved rate limit handler that's less aggressive
-def smart_rate_limit_handler(gh_client):
-    """Smart rate limit handler that calculates optimal waiting time"""
-    rate_limit = gh_client.get_rate_limit()
-    remaining = rate_limit.core.remaining
-    log_and_print(f"Rate limit check - remaining: {remaining}")
-    
-    # If we have more than 1000 requests left, continue without delay
-    if remaining > 1000:
-        return False
-        
-    # If we have a reasonable number left, continue with a small delay
-    if remaining > 250:
-        time.sleep(0.5)  # Small delay to pace requests
-        return False
-    
-    # If we're getting low, calculate wait time based on reset time
-    reset_timestamp = rate_limit.core.reset.timestamp()
-    current_timestamp = time.time()
-    time_until_reset = max(1, int(reset_timestamp - current_timestamp))
-    
-    # Calculate sleep time based on remaining requests and time until reset
-    if remaining > 50:
-        # Slow down proportionally
-        sleep_time = min(10, time_until_reset / 20)
-        log_and_print(f"Rate limit getting low ({remaining} remaining). Slowing down for {sleep_time:.1f} seconds", "warning")
-        time.sleep(sleep_time)
-        return False
-    elif remaining > 10:
-        # Slow down more aggressively
-        sleep_time = min(30, time_until_reset / 10)
-        log_and_print(f"Rate limit very low ({remaining} remaining). Slowing down for {sleep_time:.1f} seconds", "warning")
-        time.sleep(sleep_time)
-        return True
-    else:
-        # Almost exhausted, wait for reset
-        log_and_print(f"Rate limit nearly exhausted ({remaining} remaining). Waiting {time_until_reset} seconds for reset", "warning")
-        sleep_time = time_until_reset + 5  # Add a buffer
-        time.sleep(sleep_time)
-        return True
 
 def optimize_parent_child_migration(parent_child_relationships, team_cache):
     """Optimizes parent-child migrations to minimize API calls"""
@@ -1071,8 +1027,9 @@ def optimize_parent_child_migration(parent_child_relationships, team_cache):
         visit(team)
     for team in dependency_graph.keys():
         visit(team)
-        
     return execution_order
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def get_all_external_groups(org_name, token):
     """Get all external IDP groups available for an organization"""
